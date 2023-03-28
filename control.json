@@ -1,0 +1,8 @@
+{
+    "sleep_time": {
+        "time_unit": "second",
+        "time_amount": 0.1
+    },
+    "max_volume": 10,
+    "debug": false
+}
