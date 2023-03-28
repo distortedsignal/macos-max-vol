@@ -190,17 +190,29 @@ def loop_sound_monitor(arg_tuple: Options):
     
     previous_volume: float = 0
 
+    spinner = spinning_cursor()
+
     import time
     import osascript
-    while True:
-        current_volume: float = get_current_volume(osascript, arg_tuple)
+    try:
+        while True:
+            current_volume: float = get_current_volume(osascript, arg_tuple)
 
-        if current_volume > arg_tuple.max_volume:
-            set_current_volume(previous_volume, osascript, arg_tuple)
-        else:
-            previous_volume = current_volume
+            if not arg_tuple.debug:
+                sys.stdout.flush()
+                sys.stdout.write('\b')
+                sys.stdout.write(next(spinner))
 
-        time.sleep(sleep_timer)
+            if current_volume > arg_tuple.max_volume:
+                set_current_volume(previous_volume, osascript, arg_tuple)
+            else:
+                previous_volume = current_volume
+
+            time.sleep(sleep_timer)
+    except KeyboardInterrupt:
+        print()
+        print('Exiting...')
+
 
 def get_current_volume(osascript, arg_tuple) -> float:
     (return_code, return_string, return_error) = osascript.run('get volume settings')
@@ -243,6 +255,11 @@ def calculate_sleep_timer(sleep_time: SleepTime) -> float:
         return sleep_time.time_amount / 1000.0
     if sleep_time.time_unit == Constants.MINUTE:
         return sleep_time.time_amount * 60
+
+def spinning_cursor():
+    while True:
+        for cursor in '|/-\\':
+            yield cursor
 
 def main():
     arg_tuple: Options = get_arg_tuple()
