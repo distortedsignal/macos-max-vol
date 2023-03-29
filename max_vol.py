@@ -219,7 +219,6 @@ def loop_sound_monitor(arg_tuple: Options):
         print()
         print('Exiting...')
 
-
 def get_current_volume(volume_reader, arg_tuple) -> int:
     if arg_tuple.debug:
         print_debug('Getting volume')
