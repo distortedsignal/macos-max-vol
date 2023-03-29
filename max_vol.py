@@ -79,7 +79,6 @@ def get_arg_tuple() -> Options:
 
     if control_dict[Constants.DEBUG]:
         print_debug(f'control_dict: {control_dict}')
-
     
     return Options(
                     SleepTime(
@@ -103,7 +102,7 @@ def set_args_and_parse():
     parser.add_argument(f'--{Constants.TIME_UNIT}', f'-{Constants.TIME_UNIT_SHORT}', action='store',
                         metavar=Constants.TIME_UNIT, dest=Constants.TIME_UNIT,
                         help=f'The time unit the program will be expected to wait for. Must be one of "{Constants.MILLISECOND}", "{Constants.SECOND}", or "{Constants.MINUTE}".')
-    parser.add_argument(f'--{Constants.TIME_AMOUNT}', f'-{Constants.TIME_AMOUNT}', action='store',
+    parser.add_argument(f'--{Constants.TIME_AMOUNT}', f'-{Constants.TIME_AMOUNT_SHORT}', action='store',
                         metavar=Constants.TIME_AMOUNT, dest=Constants.TIME_AMOUNT, type=float,
                         help='The amount of time the program will be expected to wait for. Must be a positive number.')
     parser.add_argument(f'--{Constants.MAX_VOLUME}', f'-{Constants.MAX_VOLUME_SHORT}', action='store',
