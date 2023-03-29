@@ -1,8 +1,15 @@
 
 import collections
+import subprocess
 import sys
+import time
 
 from enum import Enum
+
+#TODO: Remove/replace with osadriver.
+import osascript
+
+import osadriver
 
 class Constants(object):
     TIME_UNIT = 'time_unit'
@@ -191,11 +198,12 @@ def loop_sound_monitor(arg_tuple: Options):
 
     spinner = spinning_cursor()
 
-    import time
-    import osascript
+    volume_reader: osadriver.OSAScriptFile = osadriver.OSAScriptFile('./osascript_read.osas')
+    volume_writer: osadriver.OSAScriptFile = osadriver.OSAScriptFile('./osascript_write.osas')
+
     try:
         while True:
-            current_volume: float = get_current_volume(osascript, arg_tuple)
+            current_volume: float = get_current_volume(volume_reader, arg_tuple)
 
             if not arg_tuple.debug:
                 sys.stdout.flush()
@@ -203,7 +211,7 @@ def loop_sound_monitor(arg_tuple: Options):
                 sys.stdout.write(next(spinner))
 
             if current_volume > arg_tuple.max_volume:
-                set_current_volume(previous_volume, osascript, arg_tuple)
+                set_current_volume(previous_volume, arg_tuple, volume_writer)
             else:
                 previous_volume = current_volume
 
@@ -212,40 +220,41 @@ def loop_sound_monitor(arg_tuple: Options):
         print()
         print('Exiting...')
 
+def get_current_volume(volume_reader, arg_tuple) -> int:
+    if arg_tuple.debug:
+        print_debug('Getting volume')
 
-def get_current_volume(osascript, arg_tuple) -> float:
-    (return_code, return_string, return_error) = osascript.run('get volume settings')
-    if return_code != 0:
+    script_out: subprocess.CompletedProcess = volume_reader.run_compiled_file()
+    if script_out.returncode != 0:
         print('FATAL ERROR', file=sys.stderr)
         print('Failed to get system volume', file=sys.stderr)
-        print(f'Command exit code was: {return_code}', file=sys.stderr)
-        print(f'Command output was: {return_string}', file=sys.stderr)
-        print(f'Error returned was: {return_error}', file=sys.stderr)
+        print(f'Command exit code was: {script_out.returncode}', file=sys.stderr)
+        print(f'Command output was: {script_out.stdout}', file=sys.stderr)
+        print(f'Error returned was: {script_out.stderr}', file=sys.stderr)
         sys.exit(ExitCodes.GET_VOLUME_FAIL)
     
     if arg_tuple.debug:
-        print_debug(f'\n\tReturn code: {return_code}\n\tReturn string: {return_string}\n\tReturn error: {return_error}')
+        print_debug(f'\n\tReturn code: {script_out.returncode}\n\tReturn string: {script_out.stdout}\n\tReturn error: {script_out.stderr}')
     
-    script_out_list = return_string.split(', ')
-    [out_vol_line] = list(filter(lambda x: x.startswith('output volume'), script_out_list))
-    [_, vol_string] = out_vol_line.split(':')
+    vol_str = script_out.stdout.decode('utf-8')
+    vol_str = vol_str.strip('\\n')
     if arg_tuple.debug:
-        print_debug(f'Current volume: {float(vol_string)}')
-    return float(vol_string)
+        print_debug(f'Current volume: {vol_str}')
+    return int(vol_str)
 
-def set_current_volume(volume: float, osascript, arg_tuple: Options) -> None:
+def set_current_volume(volume: int, arg_tuple: Options, volume_writer: osadriver.OSAScriptFile) -> None:
     if arg_tuple.debug:
-        print_debug(f'Setting volume to {volume}')
+        print_debug(f'Setting volume to {volume} with compiled file')
     
-    (return_code, return_string, return_error) = osascript.run(f'set volume output volume {volume}')
-    if return_code != 0:
+    script_out: subprocess.CompletedProcess = volume_writer.run_compiled_file([f'{volume}'])
+    if script_out.returncode != 0:
         print('NON-FATAL ERROR', file=sys.stderr)
         print('Failed to set system volume', file=sys.stderr)
-        print(f'Command exit code was: {return_code}', file=sys.stderr)
-        print(f'Command output was: {return_string}', file=sys.stderr)
-        print(f'Error returned was: {return_error}', file=sys.stderr)
+        print(f'Command exit code was: {script_out.returncode}', file=sys.stderr)
+        print(f'Command output was: {script_out.stdout}', file=sys.stderr)
+        print(f'Error returned was: {script_out.stderr}', file=sys.stderr)
     elif arg_tuple.debug:
-        print_debug(f'\n\tReturn code: {return_code}\n\tReturn string: {return_string}\n\tReturn error: {return_error}')
+        print_debug(f'\n\tReturn code: {script_out.returncode}\n\tReturn string: {script_out.stdout}\n\tReturn error: {script_out.stderr}')
 
 def calculate_sleep_timer(sleep_time: SleepTime) -> float:
     if sleep_time.time_unit == Constants.SECOND:
