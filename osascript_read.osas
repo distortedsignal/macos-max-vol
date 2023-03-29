@@ -1,1 +1,1 @@
-get volume settings
+(get output volume of (get volume settings)) as text
