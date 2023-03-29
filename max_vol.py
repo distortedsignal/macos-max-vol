@@ -6,9 +6,6 @@ import time
 
 from enum import Enum
 
-#TODO: Remove/replace with osadriver.
-import osascript
-
 import osadriver
 
 class Constants(object):
