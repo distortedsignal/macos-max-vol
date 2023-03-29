@@ -214,7 +214,7 @@ def loop_sound_monitor(arg_tuple: Options):
 
 
 def get_current_volume(osascript, arg_tuple) -> float:
-    (return_code, return_string, return_error) = osascript.run('get volume settings')
+    (return_code, return_string, return_error) = osascript.run('./osascript_read.osas')
     if return_code != 0:
         print('FATAL ERROR', file=sys.stderr)
         print('Failed to get system volume', file=sys.stderr)
