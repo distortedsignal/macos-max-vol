@@ -1,6 +1,8 @@
 
 import subprocess
 
+from typing import List, Optional
+
 class OSAScriptFile(object):
 
     def __init__(self, filepath: str) -> None:
@@ -11,6 +13,10 @@ class OSAScriptFile(object):
                                                     self.__original_filepath])
         self.__completed_compile.check_returncode()
 
-    def run_compiled_file(self):
-        return subprocess.run(['osascript', self.__compiled_filepath], capture_output=True)
+    def run_compiled_file(self, script_args: Optional[List[str]] = None) -> subprocess.CompletedProcess:
+        script_call: List[str] = ['osascript', self.__compiled_filepath]
 
+        if script_args:
+            script_call.extend(script_args)
+
+        return subprocess.run(script_call, capture_output=True)
