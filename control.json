@@ -1,8 +1,12 @@
 {
     "sleep_time": {
-        "time_unit": "second",
-        "time_amount": 0.1
+        "sleep_time_unit": "second",
+        "sleep_time_amount": 0.1
     },
     "max_volume": 10,
-    "debug": false
+    "debug": false,
+    "runtime_timeout": {
+        "runtime_time_unit": "hour",
+        "runtime_time_amount": 2
+    }
 }

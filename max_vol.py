@@ -9,11 +9,16 @@ from enum import Enum
 import osadriver
 
 class Constants(object):
-    TIME_UNIT = 'time_unit'
-    TIME_UNIT_SHORT = 'tu'
-    TIME_AMOUNT = 'time_amount'
-    TIME_AMOUNT_SHORT = 'ta'
+    SLEEP_TIME_UNIT = 'sleep_time_unit'
+    SLEEP_TIME_UNIT_SHORT = 'stu'
+    SLEEP_TIME_AMOUNT = 'sleep_time_amount'
+    SLEEP_TIME_AMOUNT_SHORT = 'sta'
     SLEEP_TIME = 'sleep_time'
+    RUNTIME_TIME_UNIT = 'runtime_time_unit'
+    RUNTIME_TIME_UNIT_SHORT = 'rtu'
+    RUNTIME_TIME_AMOUNT = 'runtime_time_amount'
+    RUNTIME_TIME_AMOUNT_SHORT = 'rta'
+    RUNTIME_TIMEOUT = 'runtime_timeout'
     MAX_VOLUME = 'max_volume'
     MAX_VOLUME_SHORT = 'mv'
     CONTROL_FILE_PATH = 'control_file_path'
@@ -21,12 +26,14 @@ class Constants(object):
     SCRIPT_FILE = 'max_vol.py'
     DEBUG = 'debug'
     DEBUG_SHORT = 'd'
-    SECOND = 'second'
+    HOUR = 'hour'
     MINUTE = 'minute'
+    SECOND = 'second'
     MILLISECOND = 'millisecond'
 
-SleepTime = collections.namedtuple('SleepTime', ['time_unit', 'time_amount'])
-Options = collections.namedtuple('Options', ['sleep_time', 'max_volume', 'debug'])
+RuntimeTimeout = collections.namedtuple('RuntimeTimeout', [Constants.RUNTIME_TIME_UNIT, Constants.RUNTIME_TIME_AMOUNT])
+SleepTime = collections.namedtuple('SleepTime', [Constants.SLEEP_TIME_UNIT, Constants.SLEEP_TIME_AMOUNT])
+Options = collections.namedtuple('Options', ['sleep_time', 'max_volume', 'debug', 'runtime_timeout'])
 
 class ExitCodes(Enum):
     CONTROL_FILE_READ_FAIL = 1
@@ -39,8 +46,8 @@ class ExitCodes(Enum):
     GET_VOLUME_FAIL = 128
 
 SIMPLE_RUN_EXAMPLE = f'> python ./{Constants.SCRIPT_FILE}'
-LONG_FLAGS_EXAMPLE = f'> python ./{Constants.SCRIPT_FILE} --{Constants.TIME_UNIT} second --{Constants.TIME_AMOUNT} 0.1 --{Constants.MAX_VOLUME} 10 --{Constants.DEBUG} --{Constants.CONTROL_FILE_PATH} ./control.json'
-SHORT_FLAGS_EXAMPLE = f'> python ./{Constants.SCRIPT_FILE} -{Constants.TIME_UNIT_SHORT} second -{Constants.TIME_AMOUNT_SHORT} 0.1 -{Constants.MAX_VOLUME_SHORT} 10 -{Constants.DEBUG_SHORT} -{Constants.CONTROL_FILE_PATH_SHORT} ./control.json'
+LONG_FLAGS_EXAMPLE = f'> python ./{Constants.SCRIPT_FILE} --{Constants.SLEEP_TIME_UNIT} second --{Constants.SLEEP_TIME_AMOUNT} 0.1 --{Constants.MAX_VOLUME} 10 --{Constants.DEBUG} --{Constants.CONTROL_FILE_PATH} --{Constants.RUNTIME_TIME_UNIT} hour --{Constants.RUNTIME_TIME_AMOUNT} 1 ./control.json'
+SHORT_FLAGS_EXAMPLE = f'> python ./{Constants.SCRIPT_FILE} -{Constants.SLEEP_TIME_UNIT_SHORT} second -{Constants.SLEEP_TIME_AMOUNT_SHORT} 0.1 -{Constants.MAX_VOLUME_SHORT} 10 -{Constants.DEBUG_SHORT} -{Constants.CONTROL_FILE_PATH_SHORT} ./control.json'
 DESCRIPTION_TEXT = '''Set a max volume for MacOS.
 
 This program should be used to set a maximum volume for MacOS volume output.
@@ -57,7 +64,7 @@ Start the daemon passing in arguments via short flags.
 
 The control file should have the following structure:
 {
-    "''' + Constants.SLEEP_TIME + '''": { "''' + Constants.TIME_UNIT + '''": "''' + Constants.MILLISECOND + '''"|"''' + Constants.SECOND + '''"|"''' + Constants.MINUTE + '''", "''' + Constants.TIME_AMOUNT + '''": [float] },
+    "''' + Constants.SLEEP_TIME + '''": { "''' + Constants.SLEEP_TIME_UNIT + '''": "''' + Constants.MILLISECOND + '''"|"''' + Constants.SECOND + '''"|"''' + Constants.MINUTE + '''", "''' + Constants.SLEEP_TIME_AMOUNT + '''": [float] },
     "''' + Constants.MAX_VOLUME + '''": [int],
     "''' + Constants.DEBUG + '''": [bool]
 }
@@ -86,11 +93,15 @@ def get_arg_tuple() -> Options:
     
     return Options(
                     SleepTime(
-                                control_dict[Constants.SLEEP_TIME][Constants.TIME_UNIT],
-                                control_dict[Constants.SLEEP_TIME][Constants.TIME_AMOUNT]
+                                control_dict[Constants.SLEEP_TIME][Constants.SLEEP_TIME_UNIT],
+                                control_dict[Constants.SLEEP_TIME][Constants.SLEEP_TIME_AMOUNT]
                     ),
                     control_dict[Constants.MAX_VOLUME],
-                    control_dict[Constants.DEBUG]
+                    control_dict[Constants.DEBUG],
+                    RuntimeTimeout(
+                                    control_dict[Constants.RUNTIME_TIMEOUT][Constants.RUNTIME_TIME_UNIT],
+                                    control_dict[Constants.RUNTIME_TIMEOUT][Constants.RUNTIME_TIME_AMOUNT]
+                    )
             )
 
 def set_args_and_parse():
@@ -103,11 +114,11 @@ def set_args_and_parse():
     parser.add_argument(f'--{Constants.CONTROL_FILE_PATH}', f'-{Constants.CONTROL_FILE_PATH_SHORT}',
                         action='store', metavar=Constants.CONTROL_FILE_PATH, dest=Constants.CONTROL_FILE_PATH, default='./control.json',
                         help='A filepath to use for the control file. Must be a json formatted file with the above specified structure. Defaults to "./control.json"')
-    parser.add_argument(f'--{Constants.TIME_UNIT}', f'-{Constants.TIME_UNIT_SHORT}', action='store',
-                        metavar=Constants.TIME_UNIT, dest=Constants.TIME_UNIT,
+    parser.add_argument(f'--{Constants.SLEEP_TIME_UNIT}', f'-{Constants.SLEEP_TIME_UNIT_SHORT}', action='store',
+                        metavar=Constants.SLEEP_TIME_UNIT, dest=Constants.SLEEP_TIME_UNIT,
                         help=f'The time unit the program will be expected to wait for. Must be one of "{Constants.MILLISECOND}", "{Constants.SECOND}", or "{Constants.MINUTE}".')
-    parser.add_argument(f'--{Constants.TIME_AMOUNT}', f'-{Constants.TIME_AMOUNT_SHORT}', action='store',
-                        metavar=Constants.TIME_AMOUNT, dest=Constants.TIME_AMOUNT, type=float,
+    parser.add_argument(f'--{Constants.SLEEP_TIME_AMOUNT}', f'-{Constants.SLEEP_TIME_AMOUNT_SHORT}', action='store',
+                        metavar=Constants.SLEEP_TIME_AMOUNT, dest=Constants.SLEEP_TIME_AMOUNT, type=float,
                         help='The amount of time the program will be expected to wait for. Must be a positive number.')
     parser.add_argument(f'--{Constants.MAX_VOLUME}', f'-{Constants.MAX_VOLUME_SHORT}', action='store',
                         metavar=Constants.MAX_VOLUME, dest=Constants.MAX_VOLUME, type=int,
@@ -131,24 +142,24 @@ def get_control_dict_from_file(args):
         return {}, ExitCodes.CONTROL_FILE_READ_FAIL, ['Failed to read control file.']
 
 def update_control_dict_with_flags(args, exit_code, error_list, control_dict):
-    if (not args.time_unit) and (not control_dict.get(Constants.SLEEP_TIME, {}).get(Constants.TIME_UNIT)):
-        exit_code += ExitCodes.MISSING_TIME_UNIT
+    if (not args.sleep_time_unit) and (not control_dict.get(Constants.SLEEP_TIME, {}).get(Constants.SLEEP_TIME_UNIT)):
+        exit_code += ExitCodes.MISSING_TIME_UNIT.value
         error_list.append('Failed to set time unit.')
-    elif args.time_unit:
+    elif args.sleep_time_unit:
         # It's probably ok to blow away the sleep time if it's not a dict.
         if not (type(control_dict.get(Constants.SLEEP_TIME)) == dict):
             control_dict[Constants.SLEEP_TIME] = {}
-        control_dict[Constants.SLEEP_TIME][Constants.TIME_UNIT] = args.time_unit
+        control_dict[Constants.SLEEP_TIME][Constants.SLEEP_TIME_UNIT] = args.sleep_time_unit
     
-    if (not args.time_amount) and (not control_dict.get(Constants.SLEEP_TIME, {}).get(Constants.TIME_AMOUNT)):
-        exit_code += ExitCodes.MISSING_TIME_AMOUNT
+    if (not args.sleep_time_amount) and (not control_dict.get(Constants.SLEEP_TIME, {}).get(Constants.SLEEP_TIME_AMOUNT)):
+        exit_code += ExitCodes.MISSING_TIME_AMOUNT.value
         error_list.append('Failed to set time amount.')
-    elif args.time_amount:
+    elif args.sleep_time_amount:
         # Here we know we already have a SLEEP_TIME dict.
-        control_dict[Constants.SLEEP_TIME][Constants.TIME_AMOUNT] = args.time_amount
+        control_dict[Constants.SLEEP_TIME][Constants.SLEEP_TIME_AMOUNT] = args.sleep_time_amount
     
     if (not args.max_volume) and (not control_dict.get(Constants.MAX_VOLUME)):
-        exit_code += ExitCodes.MISSING_MAX_VOLUME
+        exit_code += ExitCodes.MISSING_MAX_VOLUME.value
         error_list.append('Failed to set max volume.')
     elif args.max_volume:
         control_dict[Constants.MAX_VOLUME] = args.max_volume
@@ -158,13 +169,13 @@ def update_control_dict_with_flags(args, exit_code, error_list, control_dict):
     return control_dict, exit_code, error_list
 
 def validate_options(exit_code, error_list, control_dict):
-    if control_dict[Constants.SLEEP_TIME][Constants.TIME_UNIT] not in ['millisecond', 'second', 'minute']:
+    if control_dict[Constants.SLEEP_TIME][Constants.SLEEP_TIME_UNIT] not in ['millisecond', 'second', 'minute']:
         exit_code += ExitCodes.INVALID_TIME_UNIT
-        error_list.append(f'Time unit set to invalid value: {control_dict[Constants.SLEEP_TIME][Constants.TIME_UNIT]}')
+        error_list.append(f'Time unit set to invalid value: {control_dict[Constants.SLEEP_TIME][Constants.SLEEP_TIME_UNIT]}')
     
-    if control_dict[Constants.SLEEP_TIME][Constants.TIME_AMOUNT] <= 0:
+    if control_dict[Constants.SLEEP_TIME][Constants.SLEEP_TIME_AMOUNT] <= 0:
         exit_code += ExitCodes.INVALID_TIME_AMOUNT
-        error_list.append(f'Time amount set to less than 0. Value was: {control_dict[Constants.SLEEP_TIME][Constants.TIME_AMOUNT]}')
+        error_list.append(f'Time amount set to less than 0. Value was: {control_dict[Constants.SLEEP_TIME][Constants.SLEEP_TIME_AMOUNT]}')
     
     if control_dict[Constants.MAX_VOLUME] <= 0 or control_dict[Constants.MAX_VOLUME] >= 100:
         exit_code += ExitCodes.INVALID_MAX_VOLUME
@@ -254,12 +265,12 @@ def set_current_volume(volume: int, arg_tuple: Options, volume_writer: osadriver
         print_debug(f'\n\tReturn code: {script_out.returncode}\n\tReturn string: {script_out.stdout}\n\tReturn error: {script_out.stderr}')
 
 def calculate_sleep_timer(sleep_time: SleepTime) -> float:
-    if sleep_time.time_unit == Constants.SECOND:
-        return sleep_time.time_amount
-    if sleep_time.time_unit == Constants.MILLISECOND:
-        return sleep_time.time_amount / 1000.0
-    if sleep_time.time_unit == Constants.MINUTE:
-        return sleep_time.time_amount * 60
+    if sleep_time.sleep_time_unit == Constants.SECOND:
+        return sleep_time.sleep_time_amount
+    if sleep_time.sleep_time_unit == Constants.MILLISECOND:
+        return sleep_time.sleep_time_amount / 1000.0
+    if sleep_time.sleep_time_unit == Constants.MINUTE:
+        return sleep_time.sleep_time_amount * 60
 
 def spinning_cursor():
     while True:
